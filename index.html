@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GEMPAX EXPO — Official Website</title>
+     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Header Section -->
+    <header class="site-header">
+        <div class="container nav-container">
+            <h1 class="logo"><a href="index.html">GEMPAX EXPO</a></h1>
+
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="index.html#about" data-i18n="nav.about">About</a></li>
+                    <li><a href="events.html" data-i18n="nav.events">Events</a></li>
+                    <li><a href="gallery.html" data-i18n="nav.gallery">Gallery</a></li>
+                    <li><a href="booking.html" data-i18n="nav.booking">Booking</a></li>
+                    <li><a href="contact.html" data-i18n="nav.contact">Contact</a></li>
+                 </ul>
+            </nav>
+
+            <div class="header-actions">
+                <div class="dropdown">
+                    <button class="dropbtn">Account ▾</button>
+                    <div class="dropdown-content">
+                        <a href="signin.html">Sign In</a>
+                        <a href="signup.html">Sign Up</a>
+                    </div>
+                </div>  
+            </div>
+      <button class="lang-btn">MS</button>
+    </div>
+  </div>
+</header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <video autoplay muted loop class="hero-video">
+            <source src="video.mp4" type="video/mp4">
+        </video>
+        <div class="hero-overlay"></div>
+        <div class="hero-content">
+            <h1 data-reveal>GEMPAX EXPO <span class="muted">2025</span></h1>
+            <p class="lead-reveal" data-reveal>A festival of music, light, and unforgettable experiences.</p>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="container-section">
+            <h2 data-i18n="about.title" data-reveal>About GEMPAX EXPO</h2>
+            <p data-reveal>GEMPAX EXPO is a global music festival experience, combining live performances, immersive visuals, 
+                           and fan culture. Inspired by worldwide concerts like Miku Expo, GEMPAX EXPO brings Malaysia and 
+                           the world into one unforgettable night.</p>
+    </section>
+
+    <!-- Events Section -->
+    <section id="events" class="container-section">
+        <h2 data-i18n="events.title" data-reveal>Upcoming Events</h2>
+        <div class="event-grid">
+            <article class="event-card" data-reveal>
+                <h3>Kuala Lumpur</h3>
+                <p class="venue">Bukit Jalil Stadium</p>
+                <p class="date">Nov 15, 2025</p>
+            </article>
+            <article class="event-card" data-reveal>
+                <h3>Tokyo</h3>
+                <p class="venue">Tokyo Dome</p>
+                <p class="date">Nov 22, 2025</p>
+            </article>
+            <article class="event-card" data-reveal>
+                <h3>Singapore</h3>
+                <p class="venue">Marina Bay Sands</p>
+                <p class="date">Dec 29, 2025</p>
+            </article>
+        </div>
+        <div class="center">
+            <a href="events.html" class="btn">View All Events</a>
+        </div>
+    </section>
+
+    <!-- Gallery Section -->
+    <section id="gallery" class="container-section">
+        <h2 data-i18n="gallery.title" data-reveal>Gallery</h2>
+        <div class="gallery-grid">
+            <img src="gallery1.jpg" alt="Gallery Image 1" class= "thumb" loading="lazy" data-reveal>
+            <img src="gallery2.jpg" alt="Gallery Image 2" class= "thumb" loading="lazy" data-reveal>
+            <img src="gallery3.jpg" alt="Gallery Image 3" class= "thumb" loading="lazy" data-reveal>
+            <img src="gallery4.jpg" alt="Gallery Image 4" class= "thumb" loading="lazy" data-reveal>
+        </div>
+        <div class="center">
+            <a href="gallery.html" class="btn">View Full Gallery</a>
+        </div>
+    </section>
+
+    <!-- Footer -->
+  <footer class="site-footer">
+    <div class="container">
+      <p data-i18n="footer">© GEMPAX EXPO — 2025</p>
+    </div>
+  </footer>
+
+  <div class="modal" id="gallery-modal" aria-hidden="true"></div>
+    <script src="script.js"></script>
+</body>
+</html>

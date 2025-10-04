@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GEMPAX EXPO — Gallery</title>
+     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Header Section -->
+    <header class="site-header">
+        <div class="container header">
+            <a class="logo" href="index.html">GEMPAX EXPO</a>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="index.html#about" data-i18n="nav.about">About</a></li>
+                    <li><a href="events.html" data-i18n="nav.events">Events</a></li>
+                    <li><a href="gallery.html" data-i18n="nav.gallery">Gallery</a></li>
+                    <li><a href="booking.html" data-i18n="nav.booking">Booking</a></li>
+                    <li><a href="contact.html" data-i18n="nav.contact">Contact</a></li>
+                 </ul>
+            </nav>
+
+            <div class="header-actions">
+                <div class="dropdown">
+                    <button class="dropbtn">Account ▾</button>
+                    <div class="dropdown-content">
+                        <a href="signin.html">Sign In</a>
+                        <a href="signup.html">Sign Up</a>
+                    </div>
+                </div>  
+            </div>
+
+            <div class="language-switcher">
+                <button class="lang-btn">EN</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Gallery Section -->
+    <section id="gallery" class="container-section">
+        <h2 data-i18n="gallery.title" data-reveal>Gallery</h2>
+        <div class="gallery-grid">
+            <img class="thumb" src="gallery1.jpg" alt="Gallery Image 1" loading="lazy" data-reveal>
+            <img class="thumb" src="gallery2.jpg" alt="Gallery Image 2" loading="lazy" data-reveal>
+            <img class="thumb" src="gallery3.jpg" alt="Gallery Image 3" loading="lazy" data-reveal>
+            <img class="thumb" src="gallery4.jpg" alt="Gallery Image 4" loading="lazy" data-reveal>
+        </div>
+
+        <!-- Lightbox Modal -->
+        <div id="lightbox" class="lightbox">
+            <span class="close">&times;</span>
+            <img class="lightbox-content" id="lightbox-img">
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="container">
+            <p data-i18n="footer">© GEMPAX EXPO — 2025</p>
+        </div>
+    </footer>
+
+    <div class="modal" id="gallery-modal" aria-hidden="true"></div>
+    <script src="script.js"></script>
+</body>
+</html>
