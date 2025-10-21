@@ -1,38 +1,59 @@
+<?php
+session_start();
+include('db_connect.php')
+    ?>
+
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GEMPAX EXPO — Contact</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="../styling/styles.css">
 </head>
+
 <body>
     <!-- Header Section -->
     <header class="site-header">
         <div class="container header">
-            <a class="logo" href="index.html">GEMPAX EXPO</a>
+            <a class="logo" href="index.php">GEMPAX EXPO</a>
             <nav class="main-nav">
                 <ul>
-                    <li><a href="index.html#about">About</a></li>
-                    <li><a href="events.html">Events</a></li>
-                    <li><a href="gallery.html">Gallery</a></li>
-                    <li><a href="booking.html">Booking</a></li>
-                    <li><a href="contact.html" class="active">Contact</a></li>
+                    <li><a href="index.php#about">About</a></li>
+                    <li><a href="events.php">Events</a></li>
+                    <li><a href="gallery.php">Gallery</a></li>
+                    <li><a href="booking.php">Booking</a></li>
+                    <li><a href="contact.php" class="active">Contact</a></li>
+                    <li><a href="dashboard.php">Dashboard</a></li>
                 </ul>
             </nav>
 
             <div class="header-actions">
-                <div class="dropdown">
-                    <button class="dropbtn">Account ▾</button>
-                    <div class="dropdown-content">
-                        <a href="signin.html">Sign In</a>
-                        <a href="signup.html">Sign Up</a>
+                <?php if (isset($_SESSION['user_id'])): ?>
+                    <!-- If user is logged in -->
+                    <div class="dropdown">
+                        <button class="dropbtn">
+                            <?= htmlspecialchars($_SESSION['fullname']) ?> ▾
+                        </button>
+                        <div class="dropdown-content">
+                            <a href="logout.php">Logout</a>
+                        </div>
                     </div>
-                </div>  
+                <?php else: ?>
+                    <!-- If user is NOT logged in -->
+                    <div class="dropdown">
+                        <button class="dropbtn">Account ▾</button>
+                        <div class="dropdown-content">
+                            <a href="signin.php">Sign In</a>
+                            <a href="signup.php">Sign Up</a>
+                        </div>
+                    </div>
+                <?php endif; ?>
             </div>
-            
+
             <div class="language-switcher">
                 <button class="lang-btn">EN</button>
             </div>
@@ -44,9 +65,10 @@
         <div class="contact-container">
             <div class="contact-header" data-reveal>
                 <h2>Contact Us</h2>
-                <p>Have questions or need assistance? We're here to help! Reach out to us through any of the following channels.</p>
+                <p>Have questions or need assistance? We're here to help! Reach out to us through any of the following
+                    channels.</p>
             </div>
-            
+
             <div class="contact-content">
                 <!-- Contact Information -->
                 <div class="contact-info">
@@ -57,7 +79,7 @@
                         <p>123 Concert Avenue, Kuala Lumpur</p>
                         <p>50450, Malaysia</p>
                     </div>
-                    
+
                     <div class="info-card" data-reveal>
                         <i class="fas fa-phone-alt"></i>
                         <h3>Phone & Email</h3>
@@ -65,7 +87,7 @@
                         <p>info@gempaxexpo.com</p>
                         <p>support@gempaxexpo.com</p>
                     </div>
-                    
+
                     <div class="info-card" data-reveal>
                         <i class="fas fa-clock"></i>
                         <h3>Office Hours</h3>
@@ -73,7 +95,7 @@
                         <p>Saturday: 10:00 AM - 4:00 PM</p>
                         <p>Sunday: Closed</p>
                     </div>
-                    
+
                     <div class="info-card" data-reveal>
                         <i class="fas fa-share-alt"></i>
                         <h3>Follow Us</h3>
@@ -86,7 +108,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- Contact Form -->
                 <div class="contact-form-container" data-reveal>
                     <h3>Send Us a Message</h3>
@@ -101,12 +123,12 @@
                                 <input type="email" id="email" name="email" required>
                             </div>
                         </div>
-                        
+
                         <div class="form-group">
                             <label for="subject">Subject</label>
                             <input type="text" id="subject" name="subject" required>
                         </div>
-                        
+
                         <div class="form-group">
                             <label for="category">Inquiry Category</label>
                             <select id="category" name="category" required>
@@ -118,12 +140,12 @@
                                 <option value="other">Other</option>
                             </select>
                         </div>
-                        
+
                         <div class="form-group">
                             <label for="message">Message</label>
                             <textarea id="message" name="message" rows="5" required></textarea>
                         </div>
-                        
+
                         <button type="submit" class="submit-btn">
                             <i class="fas fa-paper-plane"></i> Send Message
                         </button>
@@ -132,7 +154,7 @@
             </div>
         </div>
     </section>
-    
+
     <!-- Map Section -->
     <section class="map-section">
         <div class="map-container">
@@ -140,7 +162,7 @@
                 <h3>Find Us</h3>
                 <p>Visit our headquarters or find us at upcoming events</p>
             </div>
-            
+
             <div class="map-placeholder" data-reveal>
                 <div class="map-content">
                     <i class="fas fa-map-marked-alt"></i>
@@ -150,7 +172,7 @@
             </div>
         </div>
     </section>
-    
+
     <!-- FAQ Section -->
     <section class="faq-section">
         <div class="faq-container">
@@ -158,7 +180,7 @@
                 <h3>Frequently Asked Questions</h3>
                 <p>Quick answers to common questions about GEMPAX EXPO</p>
             </div>
-            
+
             <div class="faq-list">
                 <div class="faq-item" data-reveal>
                     <div class="faq-question">
@@ -166,27 +188,33 @@
                         <i class="fas fa-chevron-down faq-toggle"></i>
                     </div>
                     <div class="faq-answer">
-                        <p>Tickets can be purchased through our official website on the Booking page. We offer various ticket tiers including General Admission, VIP, and VVIP packages. Early bird discounts are often available, so be sure to check our website regularly for updates.</p>
+                        <p>Tickets can be purchased through our official website on the Booking page. We offer various
+                            ticket tiers including General Admission, VIP, and VVIP packages. Early bird discounts are
+                            often available, so be sure to check our website regularly for updates.</p>
                     </div>
                 </div>
-                
+
                 <div class="faq-item" data-reveal>
                     <div class="faq-question">
                         <h4>What is your refund policy?</h4>
                         <i class="fas fa-chevron-down faq-toggle"></i>
                     </div>
                     <div class="faq-answer">
-                        <p>Refunds are available up to 30 days before the event date, minus a 10% processing fee. Within 30 days of the event, tickets are non-refundable but can be transferred to another person. In case of event cancellation, full refunds will be issued automatically.</p>
+                        <p>Refunds are available up to 30 days before the event date, minus a 10% processing fee. Within
+                            30 days of the event, tickets are non-refundable but can be transferred to another person.
+                            In case of event cancellation, full refunds will be issued automatically.</p>
                     </div>
                 </div>
-                
+
                 <div class="faq-item" data-reveal>
                     <div class="faq-question">
                         <h4>Do you offer group discounts?</h4>
                         <i class="fas fa-chevron-down faq-toggle"></i>
                     </div>
                     <div class="faq-answer">
-                        <p>Yes! We offer special group rates for parties of 10 or more. Please contact our group sales department at groups@gempaxexpo.com for customized pricing and booking options. Educational and corporate groups are also eligible for special packages.</p>
+                        <p>Yes! We offer special group rates for parties of 10 or more. Please contact our group sales
+                            department at groups@gempaxexpo.com for customized pricing and booking options. Educational
+                            and corporate groups are also eligible for special packages.</p>
                     </div>
                 </div>
             </div>
@@ -202,4 +230,5 @@
 
     <script src="script.js"></script>
 </body>
+
 </html>
