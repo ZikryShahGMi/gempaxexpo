@@ -164,7 +164,16 @@ if (isset($_POST['delete_account'])) {
 					<li><a href="gallery.php">Gallery</a></li>
 					<li><a href="booking.php">Booking</a></li>
 					<li><a href="contact.php">Contact</a></li>
-					<li><a href="dashboard.php" class="active">Dashboard</a></li>
+
+					<?php if (isset($_SESSION['user_id'])): ?>
+						<!-- Show Dashboard for all logged-in users -->
+						<li><a href="dashboard.php" class="active">Dashboard</a></li>
+
+						<!-- Show Admin links only for admin users -->
+						<?php if (isset($_SESSION['user_id']) && $_SESSION['userType'] === 'admin'): ?>
+							<li><a href="adminmanagementpage.php">Admin Management Page</a></li>
+						<?php endif; ?>
+					<?php endif; ?>
 				</ul>
 			</nav>
 

@@ -1,6 +1,80 @@
 <?php
 session_start();
-include('db_connect.php')
+include('db_connect.php');
+
+// Fetch events from database with venue information
+$events_sql = "SELECT c.*, v.venueName, v.venueLocation, v.venueCity, v.venueCountry, v.venueCapacity 
+               FROM concert c 
+               LEFT JOIN venue v ON c.venueID = v.venueID 
+               WHERE c.status = 'upcoming' OR c.status IS NULL OR c.status = 'ongoing'
+               ORDER BY c.concertDate ASC";
+$events_result = $conn->query($events_sql);
+$events = [];
+
+if ($events_result && $events_result->num_rows > 0) {
+    while ($row = $events_result->fetch_assoc()) {
+        // Get ticket types for this concert
+        $ticket_sql = "SELECT ticketName as type, ticketPrice as price, ticketDescription as description 
+                       FROM tickettypes 
+                       WHERE concertID = ?";
+        $ticket_stmt = $conn->prepare($ticket_sql);
+        $ticket_stmt->bind_param("i", $row['concertID']);
+        $ticket_stmt->execute();
+        $ticket_result = $ticket_stmt->get_result();
+        $tickets = [];
+
+        while ($ticket = $ticket_result->fetch_assoc()) {
+            $tickets[] = $ticket;
+        }
+
+        // Format location
+        $location = $row['venueName'];
+        if ($row['venueCity']) {
+            $location .= ', ' . $row['venueCity'];
+        }
+        if ($row['venueCountry'] && $row['venueCountry'] != $row['venueCity']) {
+            $location .= ', ' . $row['venueCountry'];
+        }
+
+        // Format date and time
+        $date = date('M j, Y', strtotime($row['concertDate']));
+        $time = $row['concertTime'] ? date('g:i A', strtotime($row['concertTime'])) : 'TBA';
+
+        // Handle image URL - use default if empty
+        $image_url = $row['image_url'] ?? '../visuals/default.jpg';
+        if (empty($image_url) || $image_url === 'NULL') {
+            $image_url = '../visuals/default.jpg';
+        }
+
+        $events[] = [
+            'id' => (int) $row['concertID'],
+            'title' => $row['concertName'],
+            'date' => $date,
+            'time' => $time,
+            'location' => $location,
+            'description' => $row['description'] ?? 'An amazing GEMPAX EXPO experience',
+            'longDescription' => $row['description'] ?? 'Join us for an unforgettable GEMPAX EXPO experience.',
+            'price' => 'RM ' . number_format($row['ticketPrice'], 2),
+            'basePrice' => (float) $row['ticketPrice'],
+            'features' => ['Live Performance', 'Multiple Stages', 'Food & Drinks'],
+            'image' => $image_url,
+            'tickets' => $tickets,
+            'details' => [
+                'duration' => ($row['duration_minutes'] ?? 180) . ' minutes',
+                'ageRestriction' => $row['age_restriction'] ?? 'All ages',
+                'language' => 'Multilingual',
+                'capacity' => number_format($row['venueCapacity'] ?? 50000),
+                'eventType' => $row['event_type'] ?? 'concert'
+            ],
+            'status' => $row['status'] ?? 'upcoming'
+        ];
+    }
+} else {
+    // Fallback to empty array
+    $events = [];
+}
+
+$events_json = json_encode($events, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
 ?>
 
 <!DOCTYPE html>
@@ -20,14 +94,23 @@ include('db_connect.php')
     <header class="site-header">
         <div class="container header">
             <a class="logo" href="index.php">GEMPAX EXPO</a>
-            <nav class="main-nav" id="mainNav">
+            <nav class="main-nav">
                 <ul>
                     <li><a href="index.php#about">About</a></li>
                     <li><a href="events.php" class="active">Events</a></li>
                     <li><a href="gallery.php">Gallery</a></li>
                     <li><a href="booking.php">Booking</a></li>
                     <li><a href="contact.php">Contact</a></li>
-                    <li><a href="dashboard.php">Dashboard</a></li>
+
+                    <?php if (isset($_SESSION['user_id'])): ?>
+                        <!-- Show Dashboard for all logged-in users -->
+                        <li><a href="dashboard.php">Dashboard</a></li>
+
+                        <!-- Show Admin links only for admin users -->
+                        <?php if (isset($_SESSION['user_id']) && $_SESSION['userType'] === 'admin'): ?>
+                            <li><a href="adminmanagementpage.php">Admin Management Page</a></li>
+                        <?php endif; ?>
+                    <?php endif; ?>
                 </ul>
             </nav>
 
@@ -65,6 +148,11 @@ include('db_connect.php')
         <div class="events-header" data-reveal>
             <h2 data-i18n="events.title">Upcoming Events</h2>
             <p>Discover all GEMPAX EXPO events happening worldwide</p>
+            <?php if (empty($events)): ?>
+                <div class="no-events-message">
+                    <p>No upcoming events at the moment. Please check back later!</p>
+                </div>
+            <?php endif; ?>
         </div>
 
         <!-- Search Section -->
@@ -75,7 +163,9 @@ include('db_connect.php')
                     placeholder="Search events by name, location, or date...">
             </div>
             <div class="search-results">
-                <span id="results-count">Showing all events</span>
+                <span id="results-count">
+                    <?php echo count($events) > 0 ? 'Showing ' . count($events) . ' events' : 'No events found'; ?>
+                </span>
             </div>
         </div>
 
@@ -119,73 +209,6 @@ include('db_connect.php')
         </div>
     </footer>
 
-    <?php
-    include('db_connect.php');
-
-    // Fetch events from database with venue information
-    $events_sql = "SELECT c.*, v.venueName, v.venueLocation, v.venueCity, v.venueCountry, v.venueCapacity 
-               FROM concert c 
-               LEFT JOIN venue v ON c.venueID = v.venueID 
-               WHERE c.status = 'upcoming' OR c.status IS NULL
-               ORDER BY c.concertDate";
-    $events_result = $conn->query($events_sql);
-    $events = [];
-
-    if ($events_result && $events_result->num_rows > 0) {
-        while ($row = $events_result->fetch_assoc()) {
-            // Get ticket types for this concert
-            $ticket_sql = "SELECT ticketName as type, ticketPrice as price, ticketDescription as description 
-                       FROM tickettypes 
-                       WHERE concertID = ?";
-            $ticket_stmt = $conn->prepare($ticket_sql);
-            $ticket_stmt->bind_param("i", $row['concertID']);
-            $ticket_stmt->execute();
-            $ticket_result = $ticket_stmt->get_result();
-            $tickets = [];
-
-            while ($ticket = $ticket_result->fetch_assoc()) {
-                $tickets[] = $ticket;
-            }
-
-            // Format location
-            $location = $row['venueName'];
-            if ($row['venueCity']) {
-                $location .= ', ' . $row['venueCity'];
-            }
-            if ($row['venueCountry'] && $row['venueCountry'] != $row['venueCity']) {
-                $location .= ', ' . $row['venueCountry'];
-            }
-
-            $events[] = [
-                'id' => (int) $row['concertID'], // Ensure ID is integer
-                'title' => $row['concertName'],
-                'date' => date('M j, Y', strtotime($row['concertDate'])),
-                'location' => $location,
-                'description' => $row['description'] ?? 'An amazing GEMPAX EXPO experience',
-                'longDescription' => $row['description'] ?? 'Join us for an unforgettable GEMPAX EXPO experience.',
-                'price' => 'RM ' . $row['ticketPrice'],
-                'features' => ['Main Stage', 'VIP Lounge', 'Special Performances'],
-                'image' => $row['image_url'] ?? '../visuals/default.jpg',
-                'tickets' => $tickets,
-                'details' => [
-                    'duration' => ($row['duration_minutes'] ?? 180) . ' minutes',
-                    'ageRestriction' => $row['age_restriction'] ?? 'All ages',
-                    'language' => 'Multilingual',
-                    'capacity' => number_format($row['venueCapacity'] ?? 50000)
-                ]
-            ];
-        }
-    } else {
-        // Fallback to empty array
-        $events = [];
-    }
-
-    // Debug: Check what events we're sending to JavaScript
-    error_log("PHP Events: " . print_r($events, true));
-
-    $events_json = json_encode($events, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
-    ?>
-
     <script>
         // Event data from database
         const events = <?php echo $events_json; ?>;
@@ -227,23 +250,12 @@ include('db_connect.php')
             const closeModalBtn2 = document.getElementById('close-modal-btn');
             const modalBookBtn = document.getElementById('modal-book-btn');
 
-            console.log('Modal elements:', {
-                modal: modal,
-                closeModalBtn: closeModalBtn,
-                closeModalBtn2: closeModalBtn2,
-                modalBookBtn: modalBookBtn
-            });
-
             if (closeModalBtn) {
                 closeModalBtn.addEventListener('click', closeModal);
-            } else {
-                console.error('Close modal button not found!');
             }
 
             if (closeModalBtn2) {
                 closeModalBtn2.addEventListener('click', closeModal);
-            } else {
-                console.error('Close modal button 2 not found!');
             }
 
             if (modalBookBtn) {
@@ -252,8 +264,6 @@ include('db_connect.php')
                     console.log('Modal book button clicked for event:', eventId);
                     bookEvent(eventId);
                 });
-            } else {
-                console.error('Modal book button not found!');
             }
 
             // Close modal when clicking outside
@@ -292,62 +302,80 @@ include('db_connect.php')
 
             if (eventsToRender.length === 0) {
                 container.innerHTML = `
-                <div class="no-results">
-                    <i class="fas fa-search"></i>
-                    <h3>No events found</h3>
-                    <p>Try adjusting your search terms or browse all events</p>
-                </div>
-            `;
+            <div class="no-results">
+                <i class="fas fa-search"></i>
+                <h3>No events found</h3>
+                <p>Try adjusting your search terms or browse all events</p>
+            </div>
+        `;
                 resultsCount.textContent = `No events found`;
                 return;
             }
 
-            // In renderEvents function, update the event card generation:
-            container.innerHTML = eventsToRender.map(event => `
-    <div class="event-card ${view}-view" data-reveal data-event-id="${event.id}">
-        <div class="event-image">
-            ${event.image ?
-                    `<img src="${event.image}" alt="${event.title}" loading="lazy" onerror="this.style.display='none'; this.parentNode.innerHTML='🎵';">` :
-                    '🎵'
+            container.innerHTML = eventsToRender.map(event => {
+                // Format date for grid view to prevent overflow
+                let displayDate;
+
+                if (view === 'grid') {
+                    // Compact format for grid view - show abbreviated format
+                    const dateParts = event.date.split(' ');
+                    if (dateParts.length >= 3) {
+                        const month = dateParts[0].substring(0, 3); // First 3 chars of month
+                        const day = dateParts[1].replace(',', ''); // Remove comma from day
+                        const year = dateParts[2];
+                        displayDate = `${month} ${day}, ${year}`;
+                    } else {
+                        displayDate = event.date; // Fallback to original
+                    }
+                } else {
+                    // Full format for list view
+                    displayDate = event.date;
                 }
-        </div>
-        <div class="event-content">
-            <div class="event-header">
-                <div>
-                    <h3 class="event-title">${event.title}</h3>
-                    <div class="event-location">
-                        <i class="fas fa-map-marker-alt"></i>
-                        ${event.location}
+
+                return `
+            <div class="event-card ${view}-view" data-reveal data-event-id="${event.id}">
+                <div class="event-image">
+                    ${event.image ?
+                        `<img src="${event.image}" alt="${event.title}" loading="lazy" onerror="this.src='../visuals/default.jpg';">` :
+                        '<img src="../visuals/default.jpg" alt="Default event image">'
+                    }
+                    ${event.status === 'ongoing' ? '<div class="event-badge ongoing">Live Now</div>' : ''}
+                </div>
+                <div class="event-content">
+                    <div class="event-header">
+                        <div>
+                            <h3 class="event-title">${event.title}</h3>
+                            <div class="event-location">
+                                <i class="fas fa-map-marker-alt"></i>
+                                ${event.location}
+                            </div>
+                        </div>
+                        <div class="event-date">
+                            <div class="event-date-main" title="${event.date} ${event.time}">${displayDate}</div>
+                            <div class="event-time">${event.time}</div>
+                        </div>
+                    </div>
+                    <p class="event-description">${event.description}</p>
+                    <div class="event-features">
+                        ${event.features.map(feature => `
+                            <span class="feature-tag">${feature}</span>
+                        `).join('')}
+                    </div>
+                    <div class="event-footer">
+                        <div class="event-price">From ${event.price}</div>
+                        <div class="event-actions">
+                            <button class="view-btn-small" onclick="viewEvent(${event.id})">
+                                <i class="fas fa-eye"></i> View
+                            </button>
+                            <button class="book-btn" onclick="bookEvent(${event.id})">Book Now</button>
+                        </div>
                     </div>
                 </div>
-                <div class="event-date">${event.date}</div>
             </div>
-            <p class="event-description">${event.description}</p>
-            <div class="event-features">
-                ${event.features.map(feature => `
-                    <span class="feature-tag">${feature}</span>
-                `).join('')}
-            </div>
-            <div class="event-footer">
-                <div class="event-price">From ${event.price}</div>
-                <div class="event-actions">
-                    <button class="view-btn-small" onclick="console.log('Clicking view for ID:', ${event.id}); viewEvent(${event.id})">
-                        <i class="fas fa-eye"></i> View
-                    </button>
-                    <button class="book-btn" onclick="bookEvent(${event.id})">Book Now</button>
-                </div>
-            </div>
-        </div>
-    </div>
-`).join('');
+        `;
+            }).join('');
 
             resultsCount.textContent = `Showing ${eventsToRender.length} events`;
-
-            // Debug: Check if buttons were created
-            const viewButtons = container.querySelectorAll('.view-btn-small');
-            const bookButtons = container.querySelectorAll('.book-btn');
-            console.log('Created view buttons:', viewButtons.length);
-            console.log('Created book buttons:', bookButtons.length);
         }
 
         // Filter events based on search term
@@ -363,6 +391,7 @@ include('db_connect.php')
                     event.location.toLowerCase().includes(searchTerm) ||
                     event.date.toLowerCase().includes(searchTerm) ||
                     event.description.toLowerCase().includes(searchTerm) ||
+                    (event.details.eventType && event.details.eventType.toLowerCase().includes(searchTerm)) ||
                     event.features.some(feature =>
                         feature.toLowerCase().includes(searchTerm)
                     )
@@ -374,16 +403,12 @@ include('db_connect.php')
 
         // View event details
         function viewEvent(eventId) {
-            console.log('=== VIEW EVENT FUNCTION CALLED ===');
-            console.log('Event ID:', eventId);
-            console.log('All events:', events);
-
+            console.log('Viewing event ID:', eventId);
             const event = events.find(e => e.id === eventId);
-            console.log('Found event:', event);
 
             if (!event) {
-                console.error('❌ Event not found with ID:', eventId);
-                alert('Event not found! Check console for details.');
+                console.error('Event not found with ID:', eventId);
+                alert('Event not found!');
                 return;
             }
 
@@ -391,71 +416,61 @@ include('db_connect.php')
             const modalBookBtn = document.getElementById('modal-book-btn');
             const modal = document.getElementById('event-modal');
 
-            console.log('Modal elements for display:', {
-                modalBody: modalBody,
-                modalBookBtn: modalBookBtn,
-                modal: modal
-            });
-
-            if (!modalBody) {
-                console.error('❌ Modal body not found!');
-                return;
-            }
-
             modalBody.innerHTML = `
-            <div class="event-detail-header">
-                <div class="event-detail-image">
-                    ${event.image ?
-                    `<img src="${event.image}" alt="${event.title}" onerror="this.style.display='none'; this.parentNode.innerHTML='🎵';">` :
-                    '🎵'
+                <div class="event-detail-header">
+                    <div class="event-detail-image">
+                        ${event.image ?
+                    `<img src="${event.image}" alt="${event.title}" onerror="this.src='../visuals/default.jpg';">` :
+                    '<img src="../visuals/default.jpg" alt="Default event image">'
                 }
-                </div>
-                <div class="event-detail-info">
-                    <h2 class="event-detail-title">${event.title}</h2>
-                    <div class="event-detail-meta">
-                        <span><i class="fas fa-calendar"></i> ${event.date}</span>
-                        <span><i class="fas fa-map-marker-alt"></i> ${event.location}</span>
                     </div>
-                    <p class="event-detail-description">${event.longDescription}</p>
-                </div>
-            </div>
-            
-            <div class="event-detail-features">
-                <div class="feature-card">
-                    <i class="fas fa-clock"></i>
-                    <h4>Duration</h4>
-                    <p>${event.details.duration}</p>
-                </div>
-                <div class="feature-card">
-                    <i class="fas fa-user"></i>
-                    <h4>Age Restriction</h4>
-                    <p>${event.details.ageRestriction}</p>
-                </div>
-                <div class="feature-card">
-                    <i class="fas fa-language"></i>
-                    <h4>Language</h4>
-                    <p>${event.details.language}</p>
-                </div>
-                <div class="feature-card">
-                    <i class="fas fa-users"></i>
-                    <h4>Capacity</h4>
-                    <p>${event.details.capacity}</p>
-                </div>
-            </div>
-            
-            <div class="ticket-options">
-                <h3>Ticket Options</h3>
-                ${event.tickets.map(ticket => `
-                    <div class="ticket-type">
-                        <div class="ticket-info">
-                            <h4>${ticket.type}</h4>
-                            <p>${ticket.description}</p>
+                    <div class="event-detail-info">
+                        <h2 class="event-detail-title">${event.title}</h2>
+                        <div class="event-detail-meta">
+                            <span><i class="fas fa-calendar"></i> ${event.date}</span>
+                            <span><i class="fas fa-clock"></i> ${event.time}</span>
+                            <span><i class="fas fa-map-marker-alt"></i> ${event.location}</span>
                         </div>
-                        <div class="ticket-price">RM ${ticket.price}</div>
+                        <p class="event-detail-description">${event.longDescription}</p>
                     </div>
-                `).join('')}
-            </div>
-        `;
+                </div>
+                
+                <div class="event-detail-features">
+                    <div class="feature-card">
+                        <i class="fas fa-clock"></i>
+                        <h4>Duration</h4>
+                        <p>${event.details.duration}</p>
+                    </div>
+                    <div class="feature-card">
+                        <i class="fas fa-user"></i>
+                        <h4>Age Restriction</h4>
+                        <p>${event.details.ageRestriction}</p>
+                    </div>
+                    <div class="feature-card">
+                        <i class="fas fa-language"></i>
+                        <h4>Language</h4>
+                        <p>${event.details.language}</p>
+                    </div>
+                    <div class="feature-card">
+                        <i class="fas fa-users"></i>
+                        <h4>Capacity</h4>
+                        <p>${event.details.capacity}</p>
+                    </div>
+                </div>
+                
+                <div class="ticket-options">
+                    <h3>Ticket Options</h3>
+                    ${event.tickets.map(ticket => `
+                        <div class="ticket-type">
+                            <div class="ticket-info">
+                                <h4>${ticket.type}</h4>
+                                <p>${ticket.description}</p>
+                            </div>
+                            <div class="ticket-price">RM ${parseFloat(ticket.price).toFixed(2)}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
 
             if (modalBookBtn) {
                 modalBookBtn.setAttribute('data-event-id', eventId);
@@ -463,9 +478,6 @@ include('db_connect.php')
 
             if (modal) {
                 modal.style.display = 'block';
-                console.log('✅ Modal should be visible now');
-            } else {
-                console.error('❌ Modal not found!');
             }
         }
 
@@ -474,7 +486,6 @@ include('db_connect.php')
             const modal = document.getElementById('event-modal');
             if (modal) {
                 modal.style.display = 'none';
-                console.log('Modal closed');
             }
         }
 

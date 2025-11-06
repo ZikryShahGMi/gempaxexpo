@@ -3,6 +3,7 @@
     --primary-color: #0f0f1a;
     --accent-color: #7c3aed;
     --accent-hover: #6d28d9;
+    --accent-admin: red;
     --text-color: #ffffff;
     --text-muted: #a1a1aa;
     --card-bg: rgba(255, 255, 255, 0.05);
@@ -76,6 +77,10 @@ body {
     color: var(--accent-color);
 }
 
+.main-nav a.red {
+    color:var(--accent-admin);
+}
+
 .main-nav a.active {
     color: var(--accent-color);
 }
@@ -89,6 +94,7 @@ body {
     height: 2px;
     background: var(--accent-color);
 }
+
 
 .header-actions {
     display: flex;

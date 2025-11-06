@@ -500,6 +500,7 @@ body {
     animation: modalFadeIn 0.3s ease;
 }
 
+
 @keyframes modalFadeIn {
     from {
         opacity: 0;
@@ -678,6 +679,69 @@ body {
     border-top: 1px solid var(--border-color);
     text-align: center;
     margin-top: 3rem;
+}
+
+/* Date overflow prevention */
+.event-date {
+    text-align: right;
+    min-width: 100px;
+    flex-shrink: 0;
+}
+
+.event-date-main {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--text-color);
+    margin-bottom: 4px;
+    line-height: 1.2;
+    
+    /* Text truncation with ellipsis */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 120px;
+}
+
+.event-time {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    line-height: 1.2;
+    
+    /* Text truncation with ellipsis */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 120px;
+}
+
+/* For grid view specifically */
+.events-grid .event-date-main {
+    font-size: 0.85rem;
+    max-width: 100px;
+}
+
+.events-grid .event-time {
+    max-width: 100px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .event-date-main {
+        font-size: 0.8rem;
+        max-width: 90px;
+    }
+    
+    .event-time {
+        max-width: 90px;
+    }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .event-date-main {
+        font-size: 0.8rem;
+        max-width: 90px;
+    }
 }
 
 /* Responsive Design */

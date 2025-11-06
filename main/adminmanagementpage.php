@@ -63,9 +63,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 	}
 }
 
-// Fetch data
-$venues = $conn->query("SELECT * FROM Venue");
+// Fetch data for display
 $concerts = $conn->query("SELECT c.*, v.venueName FROM Concert c JOIN Venue v ON c.venueID = v.venueID");
+$bookings = $conn->query("SELECT b.*, u.userFullName, c.concertName FROM Bookings b JOIN Users u ON b.userID = u.userID JOIN Concert c ON b.concertID = c.concertID");
+$users = $conn->query("SELECT * FROM Users");
+$payments = $conn->query("SELECT p.*, u.userFullName, b.bookingID FROM Payment p JOIN Users u ON p.userID = u.userID JOIN Bookings b ON p.bookingID = b.bookingID");
+$venues = $conn->query("SELECT * FROM Venue");
 ?>
 
 <!DOCTYPE html>
@@ -81,153 +84,179 @@ $concerts = $conn->query("SELECT c.*, v.venueName FROM Concert c JOIN Venue v ON
 </head>
 
 <body>
-	<!-- Header Section -->
-	<header class="site-header">
-		<div class="container nav-container">
-			<h1 class="logo"><a href="index.php">GEMPAX EXPO</a></h1>
 
-			<nav class="main-nav">
-				<ul>
-					<li><a href="index.php#about">About</a></li>
-					<li><a href="events.php">Events</a></li>
-					<li><a href="gallery.php">Gallery</a></li>
-					<li><a href="booking.php">Booking</a></li>
-					<li><a href="contact.php">Contact</a></li>
-					<li><a href="adminpage.php">Admin Dashboard</a></li>
-					<li><a href="adminmanagementpage.php" class="active">Management Page</a></li>
+	<?php include '../main/admin-header.php'; ?>
 
-					<?php if (isset($_SESSION['user_id'])): ?>
-						<!-- Show Dashboard only if logged in -->
-						<li><a href="dashboard.php">Dashboard</a></li>
-					<?php endif; ?>
-				</ul>
-			</nav>
-
-			<div class="header-actions">
-				<?php if (isset($_SESSION['user_id'])): ?>
-					<!-- If user is logged in -->
-					<div class="dropdown">
-						<button class="dropbtn">
-							<?= htmlspecialchars($_SESSION['fullname']) ?> ▾
-						</button>
-						<div class="dropdown-content">
-							<a href="logout.php">Logout</a>
-						</div>
-					</div>
-				<?php else: ?>
-					<!-- If user is NOT logged in -->
-					<div class="dropdown">
-						<button class="dropbtn">Account ▾</button>
-						<div class="dropdown-content">
-							<a href="signin.php">Sign In</a>
-							<a href="signup.php">Sign Up</a>
-						</div>
-					</div>
-				<?php endif; ?>
-			</div>
-
-			<button class="lang-btn">MS</button>
+	<div class="admin-container">
+		<!-- Admin Header -->
+		<div class="admin-header">
+			<h1>Admin Dashboard</h1>
 		</div>
-	</header>
-
-	<div class="container-section">
-		<h2>Manage Events, Gallery, and Users</h2>
 
 		<!-- Success/Error Messages -->
 		<?php if (isset($success_message)): ?>
 			<div class="message success"><?php echo $success_message; ?></div>
 		<?php endif; ?>
+
 		<?php if (isset($error_message)): ?>
 			<div class="message error"><?php echo $error_message; ?></div>
 		<?php endif; ?>
 
-		<!-- Quick Concert Management -->
+		<!-- Quick Stats Section -->
 		<div class="admin-section">
-			<h2>Quick Concert Management</h2>
+			<h2>Dashboard Overview</h2>
+			<div class="stats-grid">
+				<div class="stat-card">
+					<h3>Total Users</h3>
+					<p class="stat-number"><?php echo $users->num_rows; ?></p>
+				</div>
+				<div class="stat-card">
+					<h3>Total Concerts</h3>
+					<p class="stat-number"><?php echo $concerts->num_rows; ?></p>
+				</div>
+				<div class="stat-card">
+					<h3>Total Bookings</h3>
+					<p class="stat-number"><?php echo $bookings->num_rows; ?></p>
+				</div>
+				<div class="stat-card">
+					<h3>Total Payments</h3>
+					<p class="stat-number"><?php echo $payments->num_rows; ?></p>
+				</div>
+			</div>
+		</div>
 
-			<!-- Add Concert Form -->
-			<form method="POST" class="admin-form">
-				<h3>Add New Concert</h3>
-				<div class="form-row">
-					<div class="form-group">
-						<label>Concert Name:</label>
-						<input type="text" name="concert_name" required>
-					</div>
-					<div class="form-group">
-						<label>Event Type:</label>
-						<select name="event_type" required>
-							<option value="concert">Concert</option>
-							<option value="festival">Festival</option>
-							<option value="show">Show</option>
-						</select>
-					</div>
+		<!-- Management Sections Grid -->
+		<div class="admin-sections-grid">
+			<!-- Concert Management -->
+			<div class="admin-section">
+				<div class="section-header">
+					<h2>Concert Management</h2>
+					<a href="../backend/manageevents.php" class="btn btn-primary">Manage Events</a>
 				</div>
-				<div class="form-row">
-					<div class="form-group">
-						<label>Concert Date:</label>
-						<input type="date" name="concert_date" required>
-					</div>
-					<div class="form-group">
-						<label>Concert Time:</label>
-						<input type="time" name="concert_time" required>
-					</div>
-				</div>
-				<div class="form-row">
-					<div class="form-group">
-						<label>Ticket Price:</label>
-						<input type="number" step="0.01" name="ticket_price" required>
-					</div>
-					<div class="form-group">
-						<label>Venue:</label>
-						<select name="venue_id" required>
-							<option value="">Select Venue</option>
-							<?php while ($venue = $venues->fetch_assoc()): ?>
-								<option value="<?php echo $venue['venueID']; ?>"><?php echo $venue['venueName']; ?></option>
+				<div class="admin-table-container">
+					<table class="admin-table">
+						<thead>
+							<tr>
+								<th>ID</th>
+								<th>Concert Name</th>
+								<th>Date</th>
+								<th>Time</th>
+								<th>Price</th>
+								<th>Venue</th>
+								<th>Status</th>
+								<th>Actions</th>
+							</tr>
+						</thead>
+						<tbody>
+							<?php
+							$concerts->data_seek(0);
+							while ($concert = $concerts->fetch_assoc()): ?>
+								<tr>
+									<td><?php echo $concert['concertID']; ?></td>
+									<td>
+										<strong><?php echo $concert['concertName']; ?></strong>
+										<?php if (!empty($concert['event_type'])): ?>
+											<br><small>Type: <?php echo ucfirst($concert['event_type']); ?></small>
+										<?php endif; ?>
+									</td>
+									<td><?php echo $concert['concertDate']; ?></td>
+									<td><?php echo $concert['concertTime']; ?></td>
+									<td>$<?php echo $concert['ticketPrice']; ?></td>
+									<td><?php echo $concert['venueName']; ?></td>
+									<td>
+										<span class="status-badge status-<?php echo $concert['status'] ?? 'upcoming'; ?>">
+											<?php echo ucfirst($concert['status'] ?? 'upcoming'); ?>
+										</span>
+									</td>
+									<td>
+										<div class="action-buttons">
+											<form method="POST" class="inline-form">
+												<input type="hidden" name="concert_id"
+													value="<?php echo $concert['concertID']; ?>">
+												<button type="submit" name="delete_concert" class="btn btn-danger btn-small"
+													onclick="return confirm('Are you sure you want to delete this concert?')">
+													Delete
+												</button>
+											</form>
+										</div>
+									</td>
+								</tr>
 							<?php endwhile; ?>
-						</select>
-					</div>
+						</tbody>
+					</table>
 				</div>
-				<button type="submit" name="add_concert" class="btn">Add Concert</button>
-			</form>
-		</div>
+			</div>
 
-		<div class="admin-section">
-			<h2>Manage Events</h2>
-			<div class="action-grid">
-				<a href="addevent.php" class="btn">Add New Event</a>
-				<a href="editevent.php" class="btn">Edit/Delete Events</a>
+			<!-- Payments Management -->
+			<div class="admin-section">
+				<div class="section-header">
+					<h2>Payments Management</h2>
+				</div>
+				<div class="admin-table-container">
+					<table class="admin-table">
+						<thead>
+							<tr>
+								<th>Payment ID</th>
+								<th>User</th>
+								<th>Booking ID</th>
+								<th>Date</th>
+								<th>Amount</th>
+								<th>Status</th>
+							</tr>
+						</thead>
+						<tbody>
+							<?php
+							$payments->data_seek(0);
+							while ($payment = $payments->fetch_assoc()): ?>
+								<tr>
+									<td><?php echo $payment['paymentID']; ?></td>
+									<td><?php echo $payment['userFullName']; ?></td>
+									<td><?php echo $payment['bookingID']; ?></td>
+									<td><?php echo $payment['paymentDate']; ?></td>
+									<td>$<?php echo $payment['totalAmount']; ?></td>
+									<td>
+										<span
+											class="status-badge status-<?php echo strtolower($payment['paymentStatus']); ?>">
+											<?php echo ucfirst($payment['paymentStatus']); ?>
+										</span>
+									</td>
+								</tr>
+							<?php endwhile; ?>
+						</tbody>
+					</table>
+				</div>
 			</div>
 		</div>
 
+		<!-- Quick Actions Grid -->
 		<div class="admin-section">
-			<h2>Manage Gallery</h2>
+			<h2>Quick Management</h2>
 			<div class="action-grid">
-				<a href="addgallery.php" class="btn">Add Images</a>
-				<a href="managegallery.php" class="btn">Manage Gallery</a>
-			</div>
-		</div>
-
-		<div class="admin-section">
-			<h2>Manage Refunds</h2>
-			<div class="action-grid">
-				<a href="forcerefund.php" class="btn">Force Refund</a>
-				<a href="refundhistory.php" class="btn">Refund History</a>
-			</div>
-		</div>
-
-		<div class="admin-section">
-			<h2>User Management</h2>
-			<div class="action-grid">
-				<a href="manageusers.php" class="btn">View All Users</a>
-				<a href="banuser.php" class="btn btn-danger">Ban User</a>
-			</div>
-		</div>
-
-		<div class="admin-section">
-			<h2>Reports & Analytics</h2>
-			<div class="action-grid">
-				<a href="salesreport.php" class="btn">Sales Report</a>
-				<a href="attendance.php" class="btn">Attendance Analytics</a>
+				<div class="action-card">
+					<h3>Events</h3>
+					<p>Manage concerts and events</p>
+					<a href="../backend/manageevents.php" class="btn btn-primary">Manage Events</a>
+				</div>
+				<div class="action-card">
+					<h3>Gallery</h3>
+					<p>Manage event photos</p>
+					<a href="../backend/managegallery.php" class="btn btn-primary">Manage Gallery</a>
+				</div>
+				<div class="action-card">
+					<h3>Bookings</h3>
+					<p>View and manage bookings</p>
+					<a href="../backend/managebooking.php" class="btn btn-primary">Manage Bookings</a>
+				</div>
+				<div class="action-card">
+					<h3>Users</h3>
+					<p>Manage user accounts</p>
+					<a href="../backend/manageusers.php" class="btn btn-primary">Manage Users</a>
+				</div>
+				<div class="action-card">
+					<h3>Reports</h3>
+					<p>View analytics & reports</p>
+					<a href="../backend/reports.php" class="btn btn-primary">View Reports</a>
+				</div>
 			</div>
 		</div>
 	</div>

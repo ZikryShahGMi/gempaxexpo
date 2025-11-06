@@ -31,7 +31,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $_SESSION['role'] = $row['userType'];
 
             if ($row['userType'] === 'admin') {
-                $redirectPage = "adminpage.php";
+                $redirectPage = "index.php";
             } else {
                 $redirectPage = "index.php";
             }

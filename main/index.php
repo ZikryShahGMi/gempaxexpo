@@ -1,5 +1,15 @@
 <?php
+include('db_connect.php'); // Add this line to connect to database
 session_start();
+
+// Fetch latest gallery images from database (limit to 4 for the homepage)
+$gallery_sql = "SELECT g.*, c.concertName 
+                FROM gallery g 
+                LEFT JOIN concert c ON g.concertID = c.concertID 
+                WHERE g.is_active = 1 
+                ORDER BY g.uploaded_at DESC 
+                LIMIT 4";
+$gallery_result = $conn->query($gallery_sql);
 ?>
 
 <!DOCTYPE html>
@@ -16,9 +26,8 @@ session_start();
 <body>
     <!-- Header Section -->
     <header class="site-header">
-        <div class="container nav-container">
-            <h1 class="logo"><a href="index.php">GEMPAX EXPO</a></h1>
-
+        <div class="container header">
+            <a class="logo" href="index.php">GEMPAX EXPO</a>
             <nav class="main-nav">
                 <ul>
                     <li><a href="index.php#about" class="active">About</a></li>
@@ -28,8 +37,13 @@ session_start();
                     <li><a href="contact.php">Contact</a></li>
 
                     <?php if (isset($_SESSION['user_id'])): ?>
-                        <!-- Show Dashboard only if logged in -->
+                        <!-- Show Dashboard for all logged-in users -->
                         <li><a href="dashboard.php">Dashboard</a></li>
+
+                        <!-- Show Admin links only for admin users -->
+                        <?php if (isset($_SESSION['user_id']) && $_SESSION['userType'] === 'admin'): ?>
+                            <li><a href="adminmanagementpage.php">Admin Management Page</a></li>
+                        <?php endif; ?>
                     <?php endif; ?>
                 </ul>
             </nav>
@@ -55,6 +69,10 @@ session_start();
                         </div>
                     </div>
                 <?php endif; ?>
+            </div>
+
+            <div class="language-switcher">
+                <button class="lang-btn">EN</button>
             </div>
 
         </div>
@@ -111,10 +129,19 @@ session_start();
     <section id="gallery" class="container-section">
         <h2 data-i18n="gallery.title" data-reveal>Gallery</h2>
         <div class="gallery-grid">
-            <img src="../visuals/gallery1.jpg" alt="Gallery Image 1" class="thumb" loading="lazy" data-reveal>
-            <img src="../visuals/gallery2.jpg" alt="Gallery Image 2" class="thumb" loading="lazy" data-reveal>
-            <img src="../visuals/gallery3.jpg" alt="Gallery Image 3" class="thumb" loading="lazy" data-reveal>
-            <img src="../visuals/gallery4.jpg" alt="Gallery Image 4" class="thumb" loading="lazy" data-reveal>
+            <?php if ($gallery_result->num_rows > 0): ?>
+                <?php while ($image = $gallery_result->fetch_assoc()): ?>
+                    <img src="../<?php echo htmlspecialchars($image['image_url']); ?>"
+                        alt="<?php echo htmlspecialchars($image['caption']); ?>" class="thumb" loading="lazy" data-reveal
+                        onerror="this.src='../visuals/default.jpg'">
+                <?php endwhile; ?>
+            <?php else: ?>
+                <!-- Fallback to static images if no database images -->
+                <img src="../visuals/gallery1.jpg" alt="Gallery Image 1" class="thumb" loading="lazy" data-reveal>
+                <img src="../visuals/gallery2.jpg" alt="Gallery Image 2" class="thumb" loading="lazy" data-reveal>
+                <img src="../visuals/gallery3.jpg" alt="Gallery Image 3" class="thumb" loading="lazy" data-reveal>
+                <img src="../visuals/gallery4.jpg" alt="Gallery Image 4" class="thumb" loading="lazy" data-reveal>
+            <?php endif; ?>
         </div>
         <div class="center">
             <a href="gallery.php" class="btn">View Full Gallery</a>

@@ -1,7 +1,55 @@
 <?php
 session_start();
-include('db_connect.php')
-    ?>
+include('db_connect.php');
+
+// Process form submission
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $name = trim($_POST['name']);
+    $email = trim($_POST['email']);
+    $subject = trim($_POST['subject']);
+    $category = trim($_POST['category']);
+    $message = trim($_POST['message']);
+
+    $errors = [];
+    $success = false;
+
+    // Validation
+    if (empty($name)) {
+        $errors[] = "Name is required";
+    }
+
+    if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $errors[] = "Valid email is required";
+    }
+
+    if (empty($subject)) {
+        $errors[] = "Subject is required";
+    }
+
+    if (empty($category)) {
+        $errors[] = "Category is required";
+    }
+
+    if (empty($message)) {
+        $errors[] = "Message is required";
+    }
+
+    if (empty($errors)) {
+        // Insert into database
+        $stmt = $conn->prepare("INSERT INTO contact (userName, userEmail, messageSubject, messageCategory, messageContent) VALUES (?, ?, ?, ?, ?)");
+        $stmt->bind_param("sssss", $name, $email, $subject, $category, $message);
+
+        if ($stmt->execute()) {
+            $success = true;
+            // Clear form fields
+            $name = $email = $subject = $category = $message = '';
+        } else {
+            $errors[] = "Failed to send message. Please try again.";
+        }
+        $stmt->close();
+    }
+}
+?>
 
 <!DOCTYPE html>
 <html lang="en">
@@ -13,6 +61,42 @@ include('db_connect.php')
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../styling/styles.css">
+    <style>
+        .alert {
+            padding: 12px 16px;
+            margin: 16px 0;
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+
+        .alert-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
 </head>
 
 <body>
@@ -27,7 +111,16 @@ include('db_connect.php')
                     <li><a href="gallery.php">Gallery</a></li>
                     <li><a href="booking.php">Booking</a></li>
                     <li><a href="contact.php" class="active">Contact</a></li>
-                    <li><a href="dashboard.php">Dashboard</a></li>
+
+                    <?php if (isset($_SESSION['user_id'])): ?>
+                        <!-- Show Dashboard for all logged-in users -->
+                        <li><a href="dashboard.php">Dashboard</a></li>
+
+                        <!-- Show Admin links only for admin users -->
+                        <?php if (isset($_SESSION['user_id']) && $_SESSION['userType'] === 'admin'): ?>
+                            <li><a href="adminmanagementpage.php">Admin Management Page</a></li>
+                        <?php endif; ?>
+                    <?php endif; ?>
                 </ul>
             </nav>
 
@@ -68,6 +161,22 @@ include('db_connect.php')
                 <p>Have questions or need assistance? We're here to help! Reach out to us through any of the following
                     channels.</p>
             </div>
+
+            <!-- Display Messages -->
+            <?php if (isset($success) && $success): ?>
+                <div class="alert alert-success" data-reveal>
+                    <i class="fas fa-check-circle"></i> Thank you for your message! We'll get back to you soon.
+                </div>
+            <?php endif; ?>
+
+            <?php if (!empty($errors)): ?>
+                <div class="alert alert-error" data-reveal>
+                    <i class="fas fa-exclamation-circle"></i>
+                    <?php foreach ($errors as $error): ?>
+                        <div><?php echo htmlspecialchars($error); ?></div>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
 
             <div class="contact-content">
                 <!-- Contact Information -->
@@ -112,38 +221,42 @@ include('db_connect.php')
                 <!-- Contact Form -->
                 <div class="contact-form-container" data-reveal>
                     <h3>Send Us a Message</h3>
-                    <form id="contact-form" class="contact-form">
+                    <form id="contact-form" class="contact-form" method="POST" action="">
                         <div class="form-row">
                             <div class="form-group">
-                                <label for="name">Full Name</label>
-                                <input type="text" id="name" name="name" required>
+                                <label for="name">Full Name *</label>
+                                <input type="text" id="name" name="name"
+                                    value="<?php echo isset($name) ? htmlspecialchars($name) : ''; ?>" required>
                             </div>
                             <div class="form-group">
-                                <label for="email">Email Address</label>
-                                <input type="email" id="email" name="email" required>
+                                <label for="email">Email Address *</label>
+                                <input type="email" id="email" name="email"
+                                    value="<?php echo isset($email) ? htmlspecialchars($email) : ''; ?>" required>
                             </div>
                         </div>
 
                         <div class="form-group">
-                            <label for="subject">Subject</label>
-                            <input type="text" id="subject" name="subject" required>
+                            <label for="subject">Subject *</label>
+                            <input type="text" id="subject" name="subject"
+                                value="<?php echo isset($subject) ? htmlspecialchars($subject) : ''; ?>" required>
                         </div>
 
                         <div class="form-group">
-                            <label for="category">Inquiry Category</label>
+                            <label for="category">Inquiry Category *</label>
                             <select id="category" name="category" required>
                                 <option value="">Select a category</option>
-                                <option value="tickets">Ticket Information</option>
-                                <option value="events">Event Details</option>
-                                <option value="partnership">Partnership</option>
-                                <option value="technical">Technical Support</option>
-                                <option value="other">Other</option>
+                                <option value="tickets" <?php echo (isset($category) && $category === 'tickets') ? 'selected' : ''; ?>>Ticket Information</option>
+                                <option value="events" <?php echo (isset($category) && $category === 'events') ? 'selected' : ''; ?>>Event Details</option>
+                                <option value="partnership" <?php echo (isset($category) && $category === 'partnership') ? 'selected' : ''; ?>>Partnership</option>
+                                <option value="technical" <?php echo (isset($category) && $category === 'technical') ? 'selected' : ''; ?>>Technical Support</option>
+                                <option value="other" <?php echo (isset($category) && $category === 'other') ? 'selected' : ''; ?>>Other</option>
                             </select>
                         </div>
 
                         <div class="form-group">
-                            <label for="message">Message</label>
-                            <textarea id="message" name="message" rows="5" required></textarea>
+                            <label for="message">Message *</label>
+                            <textarea id="message" name="message" rows="5"
+                                required><?php echo isset($message) ? htmlspecialchars($message) : ''; ?></textarea>
                         </div>
 
                         <button type="submit" class="submit-btn">
@@ -229,6 +342,40 @@ include('db_connect.php')
     </footer>
 
     <script src="script.js"></script>
+    <script>
+        // FAQ toggle functionality
+        document.addEventListener('DOMContentLoaded', function () {
+            const faqQuestions = document.querySelectorAll('.faq-question');
+
+            faqQuestions.forEach(question => {
+                question.addEventListener('click', function () {
+                    const answer = this.nextElementSibling;
+                    const toggle = this.querySelector('.faq-toggle');
+
+                    // Toggle current answer
+                    answer.style.display = answer.style.display === 'block' ? 'none' : 'block';
+                    toggle.classList.toggle('fa-chevron-up');
+                    toggle.classList.toggle('fa-chevron-down');
+
+                    // Close other answers
+                    faqQuestions.forEach(otherQuestion => {
+                        if (otherQuestion !== question) {
+                            const otherAnswer = otherQuestion.nextElementSibling;
+                            const otherToggle = otherQuestion.querySelector('.faq-toggle');
+                            otherAnswer.style.display = 'none';
+                            otherToggle.classList.remove('fa-chevron-up');
+                            otherToggle.classList.add('fa-chevron-down');
+                        }
+                    });
+                });
+            });
+
+            // Initially hide all answers
+            document.querySelectorAll('.faq-answer').forEach(answer => {
+                answer.style.display = 'none';
+            });
+        });
+    </script>
 </body>
 
 </html>
