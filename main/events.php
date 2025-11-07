@@ -87,6 +87,126 @@ $events_json = json_encode($events, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../styling/events-styles.css">
+    <style>
+        /* Additional styles for date bubble improvements */
+        .event-date-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-width: 80px;
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .event-date-main {
+            font-weight: 700;
+            font-size: 0.9rem;
+            line-height: 1.2;
+            color: white;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            max-width: 100%;
+            text-align: center;
+        }
+
+        .event-time {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.8);
+            margin-top: 4px;
+            line-height: 1.2;
+        }
+
+        /* Grid view specific adjustments */
+        .events-grid .event-date-container {
+            min-width: 70px;
+            padding: 6px 10px;
+        }
+
+        .events-grid .event-date-main {
+            font-size: 0.85rem;
+        }
+
+        .events-grid .event-time {
+            font-size: 0.7rem;
+        }
+
+        /* List view specific adjustments */
+        .events-list .event-date-container {
+            min-width: 85px;
+            padding: 8px 12px;
+        }
+
+        .events-list .event-date-main {
+            font-size: 0.9rem;
+        }
+
+        .events-list .event-time {
+            font-size: 0.75rem;
+        }
+
+        /* Description truncation styles */
+        .event-description {
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            line-height: 1.4;
+            max-height: 4.2em;
+        }
+
+        .events-grid .event-description {
+            -webkit-line-clamp: 2;
+            max-height: 2.8em;
+        }
+
+        .events-list .event-description {
+            -webkit-line-clamp: 3;
+            max-height: 4.2em;
+        }
+
+        .read-more-btn {
+            background: none;
+            border: none;
+            color: #4fc3f7;
+            cursor: pointer;
+            font-size: 0.85rem;
+            padding: 4px 0;
+            margin-top: 4px;
+            text-decoration: underline;
+            font-weight: 500;
+        }
+
+        .read-more-btn:hover {
+            color: #29b6f6;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .event-date-container {
+                min-width: 65px;
+                padding: 6px 8px;
+            }
+
+            .event-date-main {
+                font-size: 0.8rem;
+            }
+
+            .event-time {
+                font-size: 0.65rem;
+            }
+
+            .event-description {
+                -webkit-line-clamp: 2;
+                max-height: 2.8em;
+            }
+        }
+    </style>
 </head>
 
 <body>
@@ -290,6 +410,12 @@ $events_json = json_encode($events, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT
             }
         }
 
+        // Truncate description text
+        function truncateDescription(text, maxLength) {
+            if (text.length <= maxLength) return text;
+            return text.substr(0, maxLength) + '...';
+        }
+
         // Render events to the page
         function renderEvents(eventsToRender, view) {
             const container = document.getElementById('events-container');
@@ -313,24 +439,8 @@ $events_json = json_encode($events, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT
             }
 
             container.innerHTML = eventsToRender.map(event => {
-                // Format date for grid view to prevent overflow
-                let displayDate;
-
-                if (view === 'grid') {
-                    // Compact format for grid view - show abbreviated format
-                    const dateParts = event.date.split(' ');
-                    if (dateParts.length >= 3) {
-                        const month = dateParts[0].substring(0, 3); // First 3 chars of month
-                        const day = dateParts[1].replace(',', ''); // Remove comma from day
-                        const year = dateParts[2];
-                        displayDate = `${month} ${day}, ${year}`;
-                    } else {
-                        displayDate = event.date; // Fallback to original
-                    }
-                } else {
-                    // Full format for list view
-                    displayDate = event.date;
-                }
+                // Format date for better display in the bubble
+                const displayDate = formatDateForBubble(event.date, view);
 
                 return `
             <div class="event-card ${view}-view" data-reveal data-event-id="${event.id}">
@@ -350,8 +460,8 @@ $events_json = json_encode($events, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT
                                 ${event.location}
                             </div>
                         </div>
-                        <div class="event-date">
-                            <div class="event-date-main" title="${event.date} ${event.time}">${displayDate}</div>
+                        <div class="event-date-container">
+                            <div class="event-date-main">${displayDate}</div>
                             <div class="event-time">${event.time}</div>
                         </div>
                     </div>
@@ -376,6 +486,27 @@ $events_json = json_encode($events, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT
             }).join('');
 
             resultsCount.textContent = `Showing ${eventsToRender.length} events`;
+        }
+
+        // Format date specifically for the date bubble
+        function formatDateForBubble(dateString, view) {
+            const date = new Date(dateString);
+
+            if (view === 'grid') {
+                // Compact format for grid view
+                const month = date.toLocaleString('en', { month: 'short' });
+                const day = date.getDate();
+                const year = date.getFullYear();
+
+                return `${month} ${day}, ${year}`;
+            } else {
+                // Slightly more detailed for list view but still compact
+                const month = date.toLocaleString('en', { month: 'short' });
+                const day = date.getDate();
+                const year = date.getFullYear();
+
+                return `${month} ${day}, ${year}`;
+            }
         }
 
         // Filter events based on search term
